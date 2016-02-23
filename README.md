@@ -1,2 +1,2 @@
 # geminipy
-A client for the Gemini bitcoin exchange
+A library for the Gemini bitcoin exchange API
