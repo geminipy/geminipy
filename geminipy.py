@@ -1,4 +1,3 @@
-import json
 import requests
 
 class geminipy:
@@ -18,21 +17,13 @@ class geminipy:
         return response.content
 
     def book(self, symbol = "btcusd", limit_bids = 0, limit_asks = 0):
-        if symbol == "":
-            return "Error: No symbol specified"
-
         url = self.base_url + '/v1/book/' + symbol
         params = {'limit_bids':limit_bids,'limit_asks':limit_asks}
         response = requests.get(url, params)
         return response.content
 
     def trades(self, symbol = "btcusd", since = 0, limit_trades = 50, include_breaks = 0):
-        if symbol == "":
-            return "Error: No symbol specified"
-
         url = self.base_url + '/v1/trades/' + symbol
         params = {'since':since,'limit_trades':limit_trades,'include_breaks':include_breaks}
         response = requests.get(url, params)
         return response.content
-
-        
