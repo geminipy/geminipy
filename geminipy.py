@@ -3,20 +3,21 @@ import requests
 
 class geminipy:
 
-    # set up default values
-    base_url = "https://api.gemini.com"
-    apikey = ""
+    live_url = "https://api.gemini.com"
+    sandbox_url = "https://api.sandbox.gemini.com"
+    base_url = sandbox_url
 
-    def __init__(self, key = ""):
-        if key != "":
-            self.apikey = key
+    def __init__(self, live = False):
+        if live:
+            base_url = self.live_url
 
+    # public requests
     def symbols(self):
         url = self.base_url + '/v1/symbols'
         response = requests.get(url)
         return response.content
 
-    def book(self, symbol, limit_bids = 0, limit_asks = 0):
+    def book(self, symbol = "btcusd", limit_bids = 0, limit_asks = 0):
         if symbol == "":
             return "Error: No symbol specified"
 
@@ -25,7 +26,7 @@ class geminipy:
         response = requests.get(url, params)
         return response.content
 
-    def trades(self, symbol, since = 0, limit_trades = 50, include_breaks = 0):
+    def trades(self, symbol = "btcusd", since = 0, limit_trades = 50, include_breaks = 0):
         if symbol == "":
             return "Error: No symbol specified"
 
@@ -34,13 +35,4 @@ class geminipy:
         response = requests.get(url, params)
         return response.content
 
-testcon = geminipy()
-
-#response = testcon.symbols()
-#print(response)
-
-#response = testcon.book('btcusd')
-#print(response)
-
-response = testcon.trades('btcusd')
-print(response)
+        
