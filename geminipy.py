@@ -7,40 +7,40 @@ class geminipy:
     base_url = "https://api.gemini.com"
     apikey = ""
 
-    def __init__(self, url = ""):
-        if url != "":
-            self.base_url = url
+    def __init__(self, key = ""):
+        if key != "":
+            self.apikey = key
 
     def symbols(self):
         url = self.base_url + '/v1/symbols'
         response = requests.get(url)
         return response.content
 
-    def book(self, symbol):
+    def book(self, symbol, limit_bids = 0, limit_asks = 0):
         if symbol == "":
             return "Error: No symbol specified"
 
         url = self.base_url + '/v1/book/' + symbol
-        response = requests.get(url)
+        params = {'limit_bids':limit_bids,'limit_asks':limit_asks}
+        response = requests.get(url, params)
         return response.content
-        
-    def trades(self, symbol, since="", limit_trades=50, include_breaks=False):
+
+    def trades(self, symbol, since = 0, limit_trades = 50, include_breaks = 0):
         if symbol == "":
             return "Error: No symbol specified"
 
         url = self.base_url + '/v1/trades/' + symbol
-        print url
         params = {'since':since,'limit_trades':limit_trades,'include_breaks':include_breaks}
         response = requests.get(url, params)
         return response.content
 
 testcon = geminipy()
 
-symbolsresponse = testcon.symbols()
-print(symbolsresponse)
+#response = testcon.symbols()
+#print(response)
 
-#bookresponse = testcon.book('btcusd')
-#print(bookresponse)
+#response = testcon.book('btcusd')
+#print(response)
 
-#tradesresponse = testcon.trades('btcusd')
-#print(tradesresponse)
+response = testcon.trades('btcusd')
+print(response)
