@@ -9,16 +9,12 @@ class geminipy:
     live_url = 'https://api.gemini.com'
     sandbox_url = 'https://api.sandbox.gemini.com'
     base_url = sandbox_url
-    apikey = ""
-    secretkey = ""
+    apikey = ''
+    secretkey = ''
 
-    def __init__(self, live = False, apikey = "", secretkey = ""):
+    def __init__(self, live = False):
         if live:
             self.base_url = self.live_url
-            
-    def setkeys(self, apikey, secretkey):
-        self.apikey = apikey
-        self.secretkey = secretkey
 
     # public requests
     def symbols(self):
@@ -39,7 +35,7 @@ class geminipy:
         return response.content
 
     # authenticated requests
-    def neworder(self, nonce, amount, price, side, client_order_id = "", symbol = 'btcusd', type = 'exchange limit'):
+    def neworder(self, nonce, amount, price, side, client_order_id = None, symbol = 'btcusd', type = 'exchange limit'):
         request = '/v1/order/new'
         url = self.base_url + request
         params = {
@@ -52,7 +48,7 @@ class geminipy:
             "type": type
         }
 
-        if client_order_id != "":
+        if client_order_id is not None:
             params['client_order_id'] = client_order_id
 
         jsonparams = json.dumps(params)
