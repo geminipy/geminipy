@@ -9,10 +9,16 @@ class geminipy:
     live_url = 'https://api.gemini.com'
     sandbox_url = 'https://api.sandbox.gemini.com'
     base_url = sandbox_url
+    apikey = ""
+    secretkey = ""
 
-    def __init__(self, live = False):
+    def __init__(self, live = False, apikey = "", secretkey = ""):
         if live:
             self.base_url = self.live_url
+            
+    def setkeys(self, apikey, secretkey):
+        self.apikey = apikey
+        self.secretkey = secretkey
 
     # public requests
     def symbols(self):
@@ -51,6 +57,6 @@ class geminipy:
 
         jsonparams = json.dumps(params)
         payload = base64.b64encode(jsonparams)
-        signature = hmac.new("secretkey", payload, hashlib.sha384).hexdigest()
-        headers = {"X-GEMINI-APIKEY":"apikey", "X-GEMINI-PAYLOAD":payload, "X-GEMINI-SIGNATURE":signature}
+        signature = hmac.new(self.secretkey, payload, hashlib.sha384).hexdigest()
+        headers = {"X-GEMINI-APIKEY":self.apikey, "X-GEMINI-PAYLOAD":payload, "X-GEMINI-SIGNATURE":signature}
         return requests.post(url, headers=headers)
