@@ -2,13 +2,13 @@ import requests
 
 class geminipy:
 
-    live_url = "https://api.gemini.com"
-    sandbox_url = "https://api.sandbox.gemini.com"
+    live_url = 'https://api.gemini.com'
+    sandbox_url = 'https://api.sandbox.gemini.com'
     base_url = sandbox_url
 
     def __init__(self, live = False):
         if live:
-            base_url = self.live_url
+            self.base_url = self.live_url
 
     # public requests
     def symbols(self):
