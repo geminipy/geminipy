@@ -158,9 +158,9 @@ class Geminipy(object):
     def prepare(self, params):
         jsonparams = json.dumps(params)
         payload = base64.b64encode(jsonparams)
-        signature = hmac.new(self.secretkey, payload,
+        signature = hmac.new(self.secret_key, payload,
                              hashlib.sha384).hexdigest()
 
-        return {'X-GEMINI-APIKEY': self.apikey,
+        return {'X-GEMINI-APIKEY': self.api_key,
                 'X-GEMINI-PAYLOAD': payload,
                 'X-GEMINI-SIGNATURE': signature}
