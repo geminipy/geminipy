@@ -13,7 +13,10 @@ class geminipy:
     apikey = ''
     secretkey = ''
 
-    def __init__(self, live = False):
+    def __init__(self, apikey = '', secretkey = '', live = False):
+        self.apikey = apikey
+        self.secretkey = secretkey
+
         if live:
             self.base_url = self.live_url
 
