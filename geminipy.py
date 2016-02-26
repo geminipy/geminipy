@@ -23,11 +23,17 @@ class Geminipy(object):
 
     # public requests
     def symbols(self):
+        """
+        Send a request to get all trading symbols and return the response.
+        """
         url = self.base_url + '/v1/symbols'
         response = requests.get(url)
         return response.content
 
     def book(self, symbol='btcusd', limit_bids=0, limit_asks=0):
+        """
+        Send a request to get the public order book and return the response.
+        """
         url = self.base_url + '/v1/book/' + symbol
         params = {
             'limit_bids': limit_bids,
@@ -38,6 +44,9 @@ class Geminipy(object):
 
     def trades(self, symbol='btcusd', since=0, limit_trades=50,
                include_breaks=0):
+        """
+        Send a request to get all public trades and return the response.
+        """
         url = self.base_url + '/v1/trades/' + symbol
         params = {
             'since': since,
@@ -50,6 +59,9 @@ class Geminipy(object):
     # authenticated requests
     def new_order(self, amount, price, side, client_order_id=None,
                   symbol='btcusd', type='exchange limit'):
+        """
+        Send a request to place an order and return the response.
+        """
         request = '/v1/order/new'
         url = self.base_url + request
         params = {
@@ -68,6 +80,9 @@ class Geminipy(object):
         return requests.post(url, headers=self.prepare(params))
 
     def cancel_order(self, order_id):
+        """
+        Send a request to cancel an order and return the response.
+        """
         request = '/v1/order/cancel'
         url = self.base_url + request
         params = {
@@ -79,6 +94,9 @@ class Geminipy(object):
         return requests.post(url, headers=self.prepare(params))
 
     def cancel_session(self):
+        """
+        Send a request to cancel all session orders and return the response.
+        """
         request = '/v1/order/cancel/session'
         url = self.base_url + request
         params = {
@@ -89,6 +107,9 @@ class Geminipy(object):
         return requests.post(url, headers=self.prepare(params))
 
     def cancel_all(self):
+        """
+        Send a request to cancel all orders and return the response.
+        """
         request = '/v1/order/cancel/all'
         url = self.base_url + request
         params = {
@@ -99,6 +120,9 @@ class Geminipy(object):
         return requests.post(url, headers=self.prepare(params))
 
     def order_status(self, order_id):
+        """
+        Send a request to get an order status and return the response.
+        """
         request = '/v1/order/status'
         url = self.base_url + request
         params = {
@@ -110,6 +134,9 @@ class Geminipy(object):
         return requests.post(url, headers=self.prepare(params))
 
     def active_orders(self):
+        """
+        Send a request to get active orders and return the response.
+        """
         request = '/v1/orders'
         url = self.base_url + request
         params = {
@@ -120,6 +147,9 @@ class Geminipy(object):
         return requests.post(url, headers=self.prepare(params))
 
     def past_trades(self, symbol='btcusd', limit_trades=50, timestamp=0):
+        """
+        Send a trade history request and return the response.
+        """
         request = '/v1/mytrades'
         url = self.base_url + request
         params = {
@@ -133,6 +163,9 @@ class Geminipy(object):
         return requests.post(url, headers=self.prepare(params))
 
     def balances(self):
+        """
+        Send an account balance request and Return the response.
+        """
         request = '/v1/balances'
         url = self.base_url + request
         params = {
@@ -143,6 +176,9 @@ class Geminipy(object):
         return requests.post(url, headers=self.prepare(params))
 
     def heartbeat(self):
+        """
+        Send a heartbeat message and return the response.
+        """
         request = '/v1/heartbeat'
         url = self.base_url + request
         params = {
@@ -153,9 +189,18 @@ class Geminipy(object):
         return requests.post(url, headers=self.prepare(params))
 
     def get_nonce(self):
+        """
+        Return the current millisecond timestamp as the nonce.
+        """
         return int(round(time.time() * 1000))
 
     def prepare(self, params):
+        """
+        Prepare and return the required HTTP headers.
+
+        Base 64 encode the parameters, sign it with the secret key,
+        create the HTTP headres, and return the whole payload.
+        """
         jsonparams = json.dumps(params)
         payload = base64.b64encode(jsonparams)
         signature = hmac.new(self.secret_key, payload,
