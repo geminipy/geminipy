@@ -1,8 +1,9 @@
+import time
 import json
 import hmac
 import base64
-import requests
 import hashlib
+import requests
 
 class geminipy:
 
@@ -35,12 +36,12 @@ class geminipy:
         return response.content
 
     # authenticated requests
-    def neworder(self, nonce, amount, price, side, client_order_id = None, symbol = 'btcusd', type = 'exchange limit'):
+    def neworder(self, amount, price, side, client_order_id = None, symbol = 'btcusd', type = 'exchange limit'):
         request = '/v1/order/new'
         url = self.base_url + request
         params = {
             "request": request,
-            "nonce": nonce,
+            "nonce": self.get_nonce(),
             "symbol": symbol,
             "amount": amount,
             "price": price,
@@ -53,64 +54,64 @@ class geminipy:
 
         return requests.post(url, headers=self.prepare(params))
 
-    def cancelorder(self, nonce, order_id):
+    def cancelorder(self, order_id):
         request = '/v1/order/cancel'
         url = self.base_url + request
         params = {
             "request": request,
-            "nonce": nonce,
+            "nonce": self.get_nonce(),
             "order_id": order_id
         }
 
         return requests.post(url, headers=self.prepare(params))
 
-    def cancelsession(self, nonce):
+    def cancelsession(self):
         request = '/v1/order/cancel/session'
         url = self.base_url + request
         params = {
             "request": request,
-            "nonce": nonce
+            "nonce": self.get_nonce()
         }
 
         return requests.post(url, headers=self.prepare(params))
 
-    def cancelall(self, nonce):
+    def cancelall(self):
         request = '/v1/order/cancel/all'
         url = self.base_url + request
         params = {
             "request": request,
-            "nonce": nonce
+            "nonce": self.get_nonce()
         }
 
         return requests.post(url, headers=self.prepare(params))
 
-    def orderstatus(self, nonce, order_id):
+    def orderstatus(self, order_id):
         request = '/v1/order/status'
         url = self.base_url + request
         params = {
             "request": request,
-            "nonce": nonce,
+            "nonce": self.get_nonce(),
             "order_id": order_id
         }
 
         return requests.post(url, headers=self.prepare(params))
 
-    def activeorders(self, nonce):
+    def activeorders(self):
         request = '/v1/orders'
         url = self.base_url + request
         params = {
             "request": request,
-            "nonce": nonce
+            "nonce": self.get_nonce()
         }
 
         return requests.post(url, headers=self.prepare(params))
 
-    def pasttrades(self, nonce, symbol = 'btcusd', limit_trades = 50, timestamp = 0):
+    def pasttrades(self, symbol = 'btcusd', limit_trades = 50, timestamp = 0):
         request = '/v1/mytrades'
         url = self.base_url + request
         params = {
             "request": request,
-            "nonce": nonce,
+            "nonce": self.get_nonce(),
             "symbol": symbol,
             "limit_trades": limit_trades,
             "timestamp": timestamp
@@ -118,25 +119,28 @@ class geminipy:
 
         return requests.post(url, headers=self.prepare(params))
 
-    def balances(self, nonce):
+    def balances(self):
         request = '/v1/balances'
         url = self.base_url + request
         params = {
             "request": request,
-            "nonce": nonce
+            "nonce": self.get_nonce()
         }
 
         return requests.post(url, headers=self.prepare(params))
 
-    def heartbeat(self, nonce):
+    def heartbeat(self):
         request = '/v1/heartbeat'
         url = self.base_url + request
         params = {
             "request": request,
-            "nonce": nonce
+            "nonce": self.get_nonce()
         }
 
         return requests.post(url, headers=self.prepare(params))
+
+    def get_nonce(self):
+        return int(round(time.time() * 1000))
 
     def prepare(self, params):
         jsonparams = json.dumps(params)
