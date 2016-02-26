@@ -11,12 +11,12 @@ class Geminipy(object):
     live_url = 'https://api.gemini.com'
     sandbox_url = 'https://api.sandbox.gemini.com'
     base_url = sandbox_url
-    apikey = ''
-    secretkey = ''
+    api_key = ''
+    secret_key = ''
 
-    def __init__(self, apikey='', secretkey='', live=False):
-        self.apikey = apikey
-        self.secretkey = secretkey
+    def __init__(self, api_key='', secret_key='', live=False):
+        self.api_key = api_key
+        self.secret_key = secret_key
 
         if live:
             self.base_url = self.live_url
