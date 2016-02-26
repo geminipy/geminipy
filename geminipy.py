@@ -5,7 +5,7 @@ import base64
 import hashlib
 import requests
 
-class geminipy:
+class geminipy(object):
 
     live_url = 'https://api.gemini.com'
     sandbox_url = 'https://api.sandbox.gemini.com'
