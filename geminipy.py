@@ -32,7 +32,7 @@ class Geminipy(object):
         Arguments:
         api_key -- your Gemini API key
         secret_key -- your Gemini API secret key for signatures
-        live -- use the live API or the Sandbox API (default False)
+        live -- use the live API? otherwise, use the sandbox (default False)
         """
         self.api_key = api_key
         self.secret_key = secret_key
@@ -234,7 +234,7 @@ class Geminipy(object):
         Prepare, return the required HTTP headers.
 
         Base 64 encode the parameters, sign it with the secret key,
-        create the HTTP headres,, return the whole payload.
+        create the HTTP headers, return the whole payload.
 
         Arguments:
         params -- a dictionary of parameters
