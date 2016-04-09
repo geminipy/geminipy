@@ -44,8 +44,8 @@ class Geminipy(object):
     def symbols(self):
         """Send a request for all trading symbols, return the response."""
         url = self.base_url + '/v1/symbols'
-        response = requests.get(url)
-        return response.content
+
+        return requests.get(url)
 
     def book(self, symbol='btcusd', limit_bids=0, limit_asks=0):
         """
@@ -61,8 +61,8 @@ class Geminipy(object):
             'limit_bids': limit_bids,
             'limit_asks': limit_asks
         }
-        response = requests.get(url, params)
-        return response.content
+
+        return requests.get(url, params)
 
     def trades(self, symbol='btcusd', since=0, limit_trades=50,
                include_breaks=0):
@@ -81,8 +81,8 @@ class Geminipy(object):
             'limit_trades': limit_trades,
             'include_breaks': include_breaks
         }
-        response = requests.get(url, params)
-        return response.content
+
+        return requests.get(url, params)
 
     # authenticated requests
     def new_order(self, amount, price, side, client_order_id=None,
