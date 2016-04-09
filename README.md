@@ -20,12 +20,17 @@ Example
     # public request
     symbols = con.symbols()
     
+    # a Requests response is returned.
+    # So we can access the HTTP reponse code,
+    # the raw response content, or a json object
+    print symbols.status_code
     print symbols.content
+    print symbols.json()
     
     # authenticated request
     order = con.new_order(amount='1', price='200',side='buy')
     
-    print order.content
+    print order.json()
     
     #send a heartbeat
     con.heartbeat()
