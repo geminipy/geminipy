@@ -5,42 +5,43 @@ Easily communicate with the Gemini Bitcoin exchange API without
 having to deal with HTTP requests.
 
 
+Requirements
+============
+Please get an API key from [https://exchange.gemini.com/settings/api](https://exchange.gemini.com/settings/api)
+
+
 Installation
 ============
 
-Just download geminipy.py
+```shell
+pip install geminipy
+```
 
 Example
 =======
 
-    from geminipy import Geminipy
+```python
+from geminipy import Geminipy
     
-    con = Geminipy(api_key='your API key', secret_key='your secret key')
+con = Geminipy(api_key='your API key', secret_key='your secret key')
     
-    # public request
-    symbols = con.symbols()
+# public request
+symbols = con.symbols()
     
-    # a Requests response is returned.
-    # So we can access the HTTP reponse code,
-    # the raw response content, or a json object
-    print symbols.status_code
-    print symbols.content
-    print symbols.json()
+# a Requests response is returned.
+# So we can access the HTTP reponse code,
+# the raw response content, or a json object
+print symbols.status_code
+print symbols.content
+print symbols.json()
     
-    # authenticated request
-    order = con.new_order(amount='1', price='200',side='buy')
+# authenticated request
+order = con.new_order(amount='1', price='200',side='buy')
     
-    print order.json()
+print order.json()
     
-    #send a heartbeat
-    con.heartbeat()
+#send a heartbeat
+con.heartbeat()
+```
 
 The required nonce is the current millisecond timestamp.
-
-Dependencies
-============
-
-requests >=2.9.1
-
-    sudo pip install requests --upgrade
-    
