@@ -13,11 +13,4 @@ setup(
     zip_safe=False,
     long_description=readme,
     description='API client for Gemini',
-    classifiers=[
-      'Gemin exchange',
-      'Cryptocurrency',
-      'Cryptoexchange',
-      'Topic :: Cryptocurrency',
-      'Topic :: Cryptocurrency:: Digital Assets Management',
-    ],
 )
