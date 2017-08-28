@@ -22,8 +22,10 @@ Example
 
 ```python
 from geminipy import Geminipy
-    
-con = Geminipy(api_key='your API key', secret_key='your secret key')
+
+# The connection defaults to the Gemini sandbox.
+# Add 'live=True' to use the live exchange
+con = Geminipy(api_key='your API key', secret_key='your secret key', live=True)
     
 # public request
 symbols = con.symbols()
