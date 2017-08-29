@@ -240,8 +240,8 @@ class Geminipy(object):
         params -- a dictionary of parameters
         """
         jsonparams = json.dumps(params)
-        payload = base64.b64encode(jsonparams)
-        signature = hmac.new(self.secret_key, payload,
+        payload = base64.b64encode(jsonparams.encode())
+        signature = hmac.new(self.secret_key.encode(), payload,
                              hashlib.sha384).hexdigest()
 
         return {'X-GEMINI-APIKEY': self.api_key,
