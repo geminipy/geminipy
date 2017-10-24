@@ -5,7 +5,7 @@ with open('README.md') as f:
 
 setup(
     name='geminipy',
-    version='0.0.1',
+    version='0.0.2',
     packages=['geminipy'],
     url='https://github.com/geminipy/geminipy',
     license='GNU GPL',
