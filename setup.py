@@ -10,6 +10,7 @@ setup(
     url='https://github.com/geminipy/geminipy',
     license='GNU GPL',
     author='Mike Marzigliano',
+    author_email='marzig76@gmail.com',
     zip_safe=False,
     long_description=readme,
     description='API client for Gemini',
