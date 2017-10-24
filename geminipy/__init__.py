@@ -86,7 +86,7 @@ class Geminipy(object):
 
     # authenticated requests
     def new_order(self, amount, price, side, client_order_id=None,
-                  symbol='btcusd', type='exchange limit'):
+                  symbol='btcusd', type='exchange limit', options=None):
         """
         Send a request to place an order, return the response.
 
@@ -112,6 +112,9 @@ class Geminipy(object):
 
         if client_order_id is not None:
             params['client_order_id'] = client_order_id
+
+        if options is not None:
+            params['options'] = options
 
         return requests.post(url, headers=self.prepare(params))
 
