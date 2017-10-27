@@ -90,6 +90,12 @@ class Geminipy(object):
 
         return requests.get(url, params)
 
+    def auction(self, symbol='btcusd'):
+        """Send a request for latest auction info, return the response"""
+        url = self.base_url + '/v1/auction/' + symbol
+
+        return requests.get(url)
+
     # authenticated requests
     def new_order(self, amount, price, side, client_order_id=None,
                   symbol='btcusd', type='exchange limit', options=None):
