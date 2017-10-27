@@ -48,7 +48,7 @@ class Geminipy(object):
         return requests.get(url)
 
     def pubticker(self, symbol='btcusd'):
-        """Send a request for latest ticker info, return the response"""
+        """Send a request for latest ticker info, return the response."""
         url = self.base_url + '/v1/pubticker/' + symbol
 
         return requests.get(url)
@@ -91,10 +91,32 @@ class Geminipy(object):
         return requests.get(url, params)
 
     def auction(self, symbol='btcusd'):
-        """Send a request for latest auction info, return the response"""
+        """Send a request for latest auction info, return the response."""
         url = self.base_url + '/v1/auction/' + symbol
 
         return requests.get(url)
+
+    def auction_history(self, symbol='btcusd', since=0,
+                        limit_auction_results=50, include_indicative=1):
+        """
+        Send a request for auction history info, return the response.
+
+        Arguments:
+        symbol -- currency symbol (default 'btcusd')
+        since -- only return auction events after this timestamp (default 0)
+        limit_auction_results -- maximum number of auction events to return
+                                 (default 50).
+        include_indicative -- whether to include publication of indicative
+                              prices and quantities. (default True)
+        """
+        url = self.base_url + '/v1/auction/' + symbol + '/history'
+        params = {
+            'since': since,
+            'limit_auction_results': limit_auction_results,
+            'include_indicative': include_indicative
+        }
+
+        return requests.get(url, params)
 
     # authenticated requests
     def new_order(self, amount, price, side, client_order_id=None,
