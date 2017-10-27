@@ -1,0 +1,9 @@
+# Geminipy Changelog
+
+# v0.0.3
+Added a function for the public ticker "pubticker" API endpoint
+Added functions for auction data (including history)
+
+# v0.0.2
+Changed project layout to make it compatible with PyPi (pip)
+Added an "options" argument to the "new_order" function
