@@ -47,6 +47,12 @@ class Geminipy(object):
 
         return requests.get(url)
 
+    def pubticker(self, symbol='btcusd'):
+        """Send a request for latest ticker info, return the response"""
+        url = self.base_url + '/v1/pubticker/' + symbol
+
+        return requests.get(url)
+
     def book(self, symbol='btcusd', limit_bids=0, limit_asks=0):
         """
         Send a request to get the public order book, return the response.
