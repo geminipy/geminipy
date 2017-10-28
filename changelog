@@ -1,5 +1,7 @@
 # Geminipy Changelog
 
+# v0.0.4
+
 # v0.0.3
 Added "pubticker" function for the public ticker API endpoint
 Added "auction" and "auction_history" functions for auction data
