@@ -4,6 +4,7 @@
 Added "pubticker" function for the public ticker API endpoint
 Added "auction" and "auction_history" functions for auction data
 Added "tradevolume" function to get user trade volume
+Added "newAddress" function to get a new cryptocurrency deposit address
 
 # v0.0.2
 Changed project layout to make it compatible with PyPi (pip)
