@@ -240,6 +240,17 @@ class Geminipy(object):
 
         return requests.post(url, headers=self.prepare(params))
 
+    def tradevolume(self):
+        """Send a request to get your trade volume, return the response."""
+        request = '/v1/tradevolume'
+        url = self.base_url + request
+        params = {
+            'request': request,
+            'nonce': self.get_nonce()
+        }
+
+        return requests.post(url, headers=self.prepare(params))
+
     def balances(self):
         """Send an account balance request, return the response."""
         request = '/v1/balances'
