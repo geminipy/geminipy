@@ -262,6 +262,27 @@ class Geminipy(object):
 
         return requests.post(url, headers=self.prepare(params))
 
+    def newAddress(self, currency='btc', label=''):
+        """
+        Send a request for a new cryptocurrency deposit address
+        with an optional label. Return the response.
+
+        Arguements:
+        currency -- a Gemini supported cryptocurrency (btc, eth)
+        label -- optional label for the deposit address
+        """
+        request = '/v1/deposit/' + currency + '/newAddress'
+        url = self.base_url + request
+        params = {
+            'request': request,
+            'nonce': self.get_nonce()
+        }
+
+        if label != '':
+            params['label'] = label
+
+        return requests.post(url, headers=self.prepare(params))
+
     def heartbeat(self):
         """Send a heartbeat message, return the response."""
         request = '/v1/heartbeat'
