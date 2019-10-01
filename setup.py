@@ -1,7 +1,7 @@
 from setuptools import setup
 
 with open('README.md') as f:
-  readme = f.read()
+  readme = f.read().replace('```', '')
 
 setup(
     name='geminipy',
