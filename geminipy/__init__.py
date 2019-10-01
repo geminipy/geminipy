@@ -284,7 +284,7 @@ class Geminipy(object):
         return requests.post(url, headers=self.prepare(params))
 
     def fees(self):
-        """Send a request to get your trade volume, return the response."""
+        """Send a request to get fee and notional volume, return the response."""
         request = '/v1/notionalvolume'
         url = self.base_url + request
         params = {
