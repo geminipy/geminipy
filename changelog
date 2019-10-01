@@ -1,5 +1,8 @@
 # Geminipy Changelog
 
+# v0.0.4
+Added "fees" function for the fee and notional volume API endpoint
+
 # v0.0.3
 Added "pubticker" function for the public ticker API endpoint
 Added "auction" and "auction_history" functions for auction data
