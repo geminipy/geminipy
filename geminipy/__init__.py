@@ -53,6 +53,24 @@ class Geminipy(object):
 
         return requests.get(url)
 
+    def pubticker_v2(self, symbol='btcusd'):
+        """Send a request for latest ticker info, return the response."""
+        url = self.base_url + '/v2/ticker/' + symbol
+
+        return requests.get(url)
+
+    def candles(self, symbol='btcusd', time_frame='1m'):
+        """
+        Send a request to get time intervaled data, return the response.
+
+        Arguments:
+        symbol -- currency symbol (default 'btcusd')
+        time_frame -- time range for each candle (default '1m')
+        """
+        url = self.base_url + '/v2/candles/' + symbol + '/' + time_frame
+
+        return requests.get(url)
+
     def book(self, symbol='btcusd', limit_bids=0, limit_asks=0):
         """
         Send a request to get the public order book, return the response.
