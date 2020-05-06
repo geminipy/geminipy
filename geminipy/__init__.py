@@ -47,15 +47,16 @@ class Geminipy(object):
 
         return requests.get(url)
 
-    def pubticker(self, symbol='btcusd'):
-        """Send a request for latest ticker info, return the response."""
-        url = self.base_url + '/v1/pubticker/' + symbol
+    def pubticker(self, symbol='btcusd', version='v1'):
+        """
+        Send a request for latest ticker info, return the response.
 
-        return requests.get(url)
-
-    def pubticker_v2(self, symbol='btcusd'):
-        """Send a request for latest ticker info, return the response."""
-        url = self.base_url + '/v2/ticker/' + symbol
+        Arguments:
+        symbol -- currency symbol (default 'btcusd')
+        version -- ticker version (default 'v1')
+        """
+        request = '/v1/pubticker/' if version == 'v1' else '/v2/ticker/'
+        url = self.base_url + request + symbol
 
         return requests.get(url)
 
