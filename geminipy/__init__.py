@@ -262,6 +262,17 @@ class Geminipy(object):
 
         return requests.post(url, headers=self.prepare(params))
 
+    def notional_balances(self):
+        """Send an account notional balance request, return the response."""
+        request = '/v1/notionalbalances/usd'
+        url = self.base_url + request
+        params = {
+            'request' : request,
+            'nonce' : self.get_nonce()
+        }
+
+        return requests.post(url, headers=self.prepare(params))
+
     def newAddress(self, currency='btc', label=''):
         """
         Send a request for a new cryptocurrency deposit address
