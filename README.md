@@ -28,17 +28,17 @@ from geminipy import Geminipy
 api = Geminipy(apikey='your API key', secret='your secret key')
     
 # public request
-symbols = api.symbols()
+symbols = api.get_symbols()
 
-print(symbols.json())
+print(symbols)
     
 # authenticated request
-order = api.new_order(amount=1, price=200.0,side='buy')
+order = api.place_order('btcusd', amount=1, price=200.0, side='buy',)
     
 print(order)
     
 #send a heartbeat
-api.heartbeat()
+api.get_heartbeat()
 ```
 
 The required nonce is the current millisecond timestamp.
