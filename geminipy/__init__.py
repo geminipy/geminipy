@@ -4,327 +4,314 @@ This module contains a class to make requests to the Gemini API.
 
 Author: Mike Marzigliano
 """
-import time
-import json
-import hmac
 import base64
 import hashlib
+import hmac
+import json
+import time
+from typing import Dict
+
 import requests
 
 
+def _get_params(params: Dict, *exclude) -> Dict:
+    check = lambda k, v: v is not None and k[0].isalpha() and k not in exclude
+    return {k: v for k, v in params.items() if check(k, v) and k != 'self'}
+
+
 class Geminipy:
-    """
-    A class to make requests to the Gemini API.
+    """Gemini API wrapper.
 
     Make public or authenticated requests according to the API documentation:
     https://docs.gemini.com/
     """
 
-    live_url = 'https://api.gemini.com'
-    sandbox_url = 'https://api.sandbox.gemini.com'
-    base_url = sandbox_url
-    api_key = ''
-    secret_key = ''
+    def __init__(self,
+                 apikey=None,
+                 secret=None,
+                 live=True,
+                 nonce_mult=1000.0,
+                 api_version=1,
+                 timeout=15,
+                 proxy=None):
+        """Initialize the class.
 
-    def __init__(self, api_key='', secret_key='', live=False):
+        :param str apikey: your Gemini API key.
+        :param str secret: your Gemini API secret key for signatures.
+        :param float nonce_mult: a custom multiplier for nonce value.
         """
-        Initialize the class.
-
-        Arguments:
-        api_key -- your Gemini API key
-        secret_key -- your Gemini API secret key for signatures
-        live -- use the live API? otherwise, use the sandbox (default False)
-        """
-        self.api_key = api_key
-        self.secret_key = secret_key
-
+        # self._api_version = api_version
         if live:
-            self.base_url = self.live_url
+            self._url = f'https://api.gemini.com'
+        else:
+            self._url = f'https://api.sandbox.gemini.com'
+        self._proxy = {'http': proxy} if proxy else None
+        self._timeout = timeout
+        self._url = f'{self._url}/v{api_version}'
+        self._apikey = apikey
+        self._nonce_mult = nonce_mult
+        self._secret = secret.encode()
+        self._headers = {'X-GEMINI-APIKEY': self._apikey}
 
-    # public requests
-    def symbols(self):
-        """Send a request for all trading symbols, return the response."""
-        url = self.base_url + '/v1/symbols'
+    # ================ Class private methods ================
 
-        return requests.get(url)
+    def _request(self, end_point, method=None, params=None):
+        method = str(method or 'get').lower()
 
-    def pubticker(self, symbol='btcusd'):
-        """Send a request for latest ticker info, return the response."""
-        url = self.base_url + '/v1/pubticker/' + symbol
-
-        return requests.get(url)
-
-    def book(self, symbol='btcusd', limit_bids=0, limit_asks=0):
-        """
-        Send a request to get the public order book, return the response.
-
-        Arguments:
-        symbol -- currency symbol (default 'btcusd')
-        limit_bids -- limit the number of bids returned (default 0)
-        limit_asks -- limit the number of asks returned (default 0)
-        """
-        url = self.base_url + '/v1/book/' + symbol
-        params = {
-            'limit_bids': limit_bids,
-            'limit_asks': limit_asks
+        request_args = {
+            'url': f'{self._url}/{end_point}',
+            'method': method,
+            'timeout': self._timeout,
+            'headers': self._headers
         }
 
-        return requests.get(url, params)
+        if params:
+            if method in ('post',):
+                params.update(
+                    request=end_point,
+                    nonce=self._nonce
+                )
+                json_params = json.dumps(params or {}).encode()
+                payload = base64.b64encode(json_params)
+                signature = hmac.new(self._secret, payload, hashlib.sha384)
+                request_args.update(headers={
+                    'X-GEMINI-PAYLOAD': payload,
+                    'X-GEMINI-SIGNATURE': signature.hexdigest(),
+                })
+            else:
+                request_args.update(params=params)
 
-    def trades(self, symbol='btcusd', since=0, limit_trades=50,
-               include_breaks=0):
+        if self._proxy:
+            request_args.update(proxies=self._proxy)
+
+        response = requests.request(**request_args)
+
+        if response:
+            if response.ok:
+                return response.json()
+            else:
+                # elif any('json' in h for h in response.headers):
+                try:
+                    data = response.json()
+                    return {'error': data}
+                except json.JSONDecodeError:
+                    return {
+                        'error': {
+                            'code': response.status_code,
+                            'reason': response.reason,
+                            'content': response.text
+                        }
+                    }
+                except (requests.RequestException, requests.ConnectionError):
+                    response.raise_for_status()
+
+    @property
+    def _nonce(self):
+        """Return the current millisecond timestamp as the nonce.
+
+        :return: current millisecond timestamp as the nonce
         """
-        Send a request to get all public trades, return the response.
+        return f'{time.time() * self._nonce_mult:.0f}'
 
-        Arguments:
-        symbol -- currency symbol (default 'btcusd')
-        since -- only return trades after this unix timestamp (default 0)
-        limit_trades -- maximum number of trades to return (default 50).
-        include_breaks -- whether to display broken trades (default False)
+    # ================ PUBLIC END POINTS ================
+
+    def get_symbols(self):
+        """Send a request to get trading symbols info."""
+        return self._request('symbols')
+
+    def get_ticker(self, symbol):
+        """Send a request to get a trading symbol ticker info.
+
+        :param symbol: symbol id to query (example: "btcusd")
+        :return: trading symbol ticker info supplied by server.
         """
-        url = self.base_url + '/v1/trades/' + symbol
-        params = {
-            'since': since,
-            'limit_trades': limit_trades,
-            'include_breaks': include_breaks
-        }
+        return self._request(f'pubticker/{symbol}')
 
-        return requests.get(url, params)
+    def get_orderbook(self, symbol, limit_bids=0, limit_asks=0):
+        """Send a request to get a symbol order book data.
 
-    def auction(self, symbol='btcusd'):
-        """Send a request for latest auction info, return the response."""
-        url = self.base_url + '/v1/auction/' + symbol
-
-        return requests.get(url)
-
-    def auction_history(self, symbol='btcusd', since=0,
-                        limit_auction_results=50, include_indicative=1):
+        :param symbol: symbol id to query (example: "btcusd")
+        :param limit_bids: limit the number of bids returned (default 0)
+        :param limit_asks: limit the number of asks returned (default 0)
+        :return: symbol order book info supplied by server.
         """
-        Send a request for auction history info, return the response.
+        params = _get_params(locals(), 'symbol')
+        return self._request(f'book/{symbol}', params=params)
 
-        Arguments:
-        symbol -- currency symbol (default 'btcusd')
-        since -- only return auction events after this timestamp (default 0)
-        limit_auction_results -- maximum number of auction events to return
-                                 (default 50).
-        include_indicative -- whether to include publication of indicative
-                              prices and quantities. (default True)
+    def get_trades(self, symbol, since=0, limit_trades=50, include_breaks=0):
+        """Send a request to get a symbol public trades.
+
+        :param str symbol: symbol id to query (example: "btcusd")
+        :param int since: return trades after this unix epoch (default 0)
+        :param limit_trades: max number of trades to return (default 50).
+        :param int include_breaks: whether to display broken trades (default 0)
+        :return: supplied symbol public trades info supplied by server.
         """
-        url = self.base_url + '/v1/auction/' + symbol + '/history'
-        params = {
-            'since': since,
-            'limit_auction_results': limit_auction_results,
-            'include_indicative': include_indicative
-        }
+        params = _get_params(locals(), 'symbol')
+        return self._request(f'trades/{symbol}', params=params)
 
-        return requests.get(url, params)
+    def get_auction(self, symbol):
+        """Send a request to get a symbol latest auction info.
 
-    # authenticated requests
-    def new_order(self, amount, price, side, client_order_id=None,
-                  symbol='btcusd', type='exchange limit', options=None):
+        :param str symbol: symbol id to query (example: "btcusd")
+        :return: supplied symbol latest auction supplied by server.
         """
-        Send a request to place an order, return the response.
+        return self._request(f'auction/{symbol}')
 
-        Arguments:
-        amount -- quoted decimal amount of BTC to purchase
-        price -- quoted decimal amount of USD to spend per BTC
-        side -- 'buy' or 'sell'
-        client_order_id -- an optional client-specified order id (default None)
-        symbol -- currency symbol (default 'btcusd')
-        type -- the order type (default 'exchange limit')
+    def get_auction_history(self, symbol, since=0, limit_auction_results=50, include_indicative=1):
+        """Send a request to get a symbol auction history.
+
+        :param str symbol: symbol id to query (example: "btcusd")
+        :param since: only return auction events after this timestamp.
+        :param limit_auction_results: max number of auction events to return.
+        :param include_indicative: set to 0 to not include publication of indicative info.
+        :return:
         """
-        request = '/v1/order/new'
-        url = self.base_url + request
-        params = {
-            'request': request,
-            'nonce': self.get_nonce(),
-            'symbol': symbol,
-            'amount': amount,
-            'price': price,
-            'side': side,
-            'type': type
-        }
+        params = _get_params(locals(), 'symbol')
+        return self._request(f'auction/{symbol}/history', params)
 
-        if client_order_id is not None:
-            params['client_order_id'] = client_order_id
+    # ================ AUTHENTICATED ENDPOINTS ================
 
-        if options is not None:
-            params['options'] = options
+    def place_order(self, side, symbol, amount, price=None, client_order_id=None, type=None, options=None):
+        """Send a request to place an order.
 
-        return requests.post(url, headers=self.prepare(params))
+        :param str side: 'buy' or 'sell'
+        :param str symbol: symbol id to query (example: "btcusd")
+        :param float amount: symbol amount to order.
+        :param float price: order price.
+        :param client_order_id: an optional custom order indetifier.
+        :param type: order type (default 'exchange limit')
+        :param options:
+        return:
+        """
+        params = _get_params(locals(), 'amount', 'price')
+        params.update(amount=f'{amount}')
+        return self._request('order/new', 'post', params)
 
     def cancel_order(self, order_id):
-        """
-        Send a request to cancel an order, return the response.
+        """Send a request to cancel an order.
 
-        Arguments:
-        order_id - the order id to cancel
+        :param str order_id: order id to cancel.
+        :return:
         """
-        request = '/v1/order/cancel'
-        url = self.base_url + request
-        params = {
-            'request': request,
-            'nonce': self.get_nonce(),
-            'order_id': order_id
-        }
-
-        return requests.post(url, headers=self.prepare(params))
+        params = _get_params(locals())
+        return self._request('order/cancel', 'post', params)
 
     def cancel_session(self):
-        """Send a request to cancel all session orders, return the response."""
-        request = '/v1/order/cancel/session'
-        url = self.base_url + request
-        params = {
-            'request': request,
-            'nonce': self.get_nonce()
-        }
+        """Send a request to cancel all session orders.
 
-        return requests.post(url, headers=self.prepare(params))
+        :return:
+        """
+        return self._request('order/cancel/session', 'post')
 
     def cancel_all(self):
-        """Send a request to cancel all orders, return the response."""
-        request = '/v1/order/cancel/all'
-        url = self.base_url + request
-        params = {
-            'request': request,
-            'nonce': self.get_nonce()
-        }
+        """Send a request to cancel all orders.
 
-        return requests.post(url, headers=self.prepare(params))
-
-    def order_status(self, order_id):
+        :return:
         """
-        Send a request to get an order status, return the response.
+        return self._request('order/cancel/all', 'post')
 
-        Arguments:
-        order_id -- the order id to get information on
+    def get_order_status(self, order_id):
+        """Send a request to get an order current status.
+
+        :param str order_id: the order id to get information on.
+        :return:
         """
-        request = '/v1/order/status'
-        url = self.base_url + request
-        params = {
-            'request': request,
-            'nonce': self.get_nonce(),
-            'order_id': order_id
-        }
+        params = _get_params(locals())
+        return self._request('order/status', 'post', params)
 
-        return requests.post(url, headers=self.prepare(params))
+    def get_active_orders(self):
+        """Send a request to get active orders.
 
-    def active_orders(self):
-        """Send a request to get active orders, return the response."""
-        request = '/v1/orders'
-        url = self.base_url + request
-        params = {
-            'request': request,
-            'nonce': self.get_nonce()
-        }
-
-        return requests.post(url, headers=self.prepare(params))
-
-    def past_trades(self, symbol='btcusd', limit_trades=50, timestamp=0):
+        :return:
         """
-        Send a trade history request, return the response.
+        return self._request('orders', 'post')
 
-        Arguements:
-        symbol -- currency symbol (default 'btcusd')
-        limit_trades -- maximum number of trades to return (default 50)
-        timestamp -- only return trades after this unix timestamp (default 0)
+    def get_past_trades(self, symbol, limit_trades=50, timestamp=0):
+        """Send a symbol trades history request.
+
+        :param str symbol: symbol id to query (example: "btcusd")
+        :param limit_trades: max number of trades to return (default 50)
+        :param timestamp: return trades after supplied unix epoch (default 0)
+        :return:
         """
-        request = '/v1/mytrades'
-        url = self.base_url + request
-        params = {
-            'request': request,
-            'nonce': self.get_nonce(),
-            'symbol': symbol,
-            'limit_trades': limit_trades,
-            'timestamp': timestamp
-        }
+        params = _get_params(locals())
+        return self._request('mytrades', 'post', params)
 
-        return requests.post(url, headers=self.prepare(params))
+    def get_trade_volume(self):
+        """Send a request to get your trade volume."""
+        return self._request('tradevolume', 'post')
 
-    def tradevolume(self):
-        """Send a request to get your trade volume, return the response."""
-        request = '/v1/tradevolume'
-        url = self.base_url + request
-        params = {
-            'request': request,
-            'nonce': self.get_nonce()
-        }
+    def get_balances(self):
+        """Send an account balance request.
 
-        return requests.post(url, headers=self.prepare(params))
-
-    def balances(self):
-        """Send an account balance request, return the response."""
-        request = '/v1/balances'
-        url = self.base_url + request
-        params = {
-            'request': request,
-            'nonce': self.get_nonce()
-        }
-
-        return requests.post(url, headers=self.prepare(params))
-
-    def newAddress(self, currency='btc', label=''):
+        :return:
         """
-        Send a request for a new cryptocurrency deposit address
-        with an optional label. Return the response.
+        return self._request('balances', 'post')
 
-        Arguements:
-        currency -- a Gemini supported cryptocurrency (btc, eth)
-        label -- optional label for the deposit address
+    def new_deposit_address(self, currency, label=None):
+        """Send a request to generate a new cryptocurrency deposit address.
+
+        :param str currency: crypto currency ID (example: btc)
+        :param str label: optional label for the deposit address
+        :return:
         """
-        request = '/v1/deposit/' + currency + '/newAddress'
-        url = self.base_url + request
-        params = {
-            'request': request,
-            'nonce': self.get_nonce()
-        }
+        params = _get_params(locals(), 'currency')
+        return self._request(f'deposit/{currency}/newAddress', 'post', params)
 
-        if label != '':
-            params['label'] = label
+    def get_notional_balances(self, currency, account=None):
+        """Get approved addresses for supplied network and account (if supplied)
 
-        return requests.post(url, headers=self.prepare(params))
-
-    def fees(self):
-        """Send a request to get fee and notional volume, return the response."""
-        request = '/v1/notionalvolume'
-        url = self.base_url + request
-        params = {
-            'request': request,
-            'nonce': self.get_nonce()
-        }
-
-        return requests.post(url, headers=self.prepare(params))
-
-    def heartbeat(self):
-        """Send a heartbeat message, return the response."""
-        request = '/v1/heartbeat'
-        url = self.base_url + request
-        params = {
-            'request': request,
-            'nonce': self.get_nonce()
-        }
-
-        return requests.post(url, headers=self.prepare(params))
-
-    def get_nonce(self):
-        """Return the current millisecond timestamp as the nonce."""
-        return int(round(time.time() * 1000))
-
-    def prepare(self, params):
+        :param str currency: currency to get balance for.
+        :param str account: account name (example: primary)
+        :return:
         """
-        Prepare, return the required HTTP headers.
+        params = _get_params(locals(), 'currency')
+        return self._request(f'notionalbalances/{currency}', 'post', params)
 
-        Base 64 encode the parameters, sign it with the secret key,
-        create the HTTP headers, return the whole payload.
+    def remove_approved_address(self, network, address, account=None):
+        """Get approved addresses for supplied network and account (if supplied)
 
-        Arguments:
-        params -- a dictionary of parameters
+        :param str network: accepted values: bitcoin, ethereum, bitcoincash, litecoin, zcash, filecoin, dogecoin, tezos
+        :param str address: address to remove.
+        :param str account: account name (example: primary)
+        :return:
         """
-        jsonparams = json.dumps(params)
-        payload = base64.b64encode(jsonparams.encode())
-        signature = hmac.new(self.secret_key.encode(), payload,
-                             hashlib.sha384).hexdigest()
+        params = _get_params(locals(), 'network')
+        return self._request(f'approvedAddresses/account/{network}/remove', 'post', params)
 
-        return {'X-GEMINI-APIKEY': self.api_key,
-                'X-GEMINI-PAYLOAD': payload,
-                'X-GEMINI-SIGNATURE': signature}
+    def request_approved_address(self, network, address, label=None, account=None):
+        """Get approved addresses for supplied network and account (if supplied)
+
+        :param str network: accepted values: bitcoin, ethereum, bitcoincash, litecoin, zcash, filecoin, dogecoin, tezos
+        :param str address: address to remove.
+        :param str label: a label to identify the supplied address.
+        :param str account: account name (example: primary)
+        :return:
+        """
+        params = _get_params(locals(), 'network')
+        return self._request(f'approvedAddresses/{network}/request', 'post', params)
+
+    def get_fees(self):
+        """Send a request to get fees and notional volume."""
+        self._request('notionalvolume', 'post')
+
+    def get_earn_balance(self, account=None):
+        """Send an account earn balance request.
+
+        :param str account: account name (example: primary)
+        :return:
+        """
+        params = _get_params(locals())
+        return self._request('balances/earn', 'post', params)
+
+    def get_account_details(self):
+        return self._request('account', 'post')
+
+    def get_heartbeat(self):
+        """Send a heartbeat message.
+
+        :return:
+        """
+        return self._request('heartbeat', 'post')
+
