@@ -7,7 +7,8 @@ import time
 
 import requests
 
-from geminipy import _get_params
+from geminipy.utils import _get_params
+from geminipy.constants import NETWORKS
 
 
 class Client:
@@ -36,9 +37,10 @@ class Client:
             self._url = f'https://api.gemini.com'
         else:
             self._url = f'https://api.sandbox.gemini.com'
+        self._api_version = f'v{api_version:d}'
         self._proxy = {'http': proxy} if proxy else None
         self._timeout = timeout
-        self._url = f'{self._url}/v{api_version}'
+        self._url = f'{self._url}/{self._api_version}'
         self._apikey = apikey
         self._nonce_mult = nonce_mult
         self._secret = secret.encode()
@@ -56,45 +58,67 @@ class Client:
             'headers': self._headers
         }
 
-        if params:
-            if method in ('post',):
-                params.update(
-                    request=end_point,
-                    nonce=self._nonce
-                )
-                json_params = json.dumps(params or {}).encode()
-                payload = base64.b64encode(json_params)
-                signature = hmac.new(self._secret, payload, hashlib.sha384)
-                request_args.update(headers={
-                    'X-GEMINI-PAYLOAD': payload,
-                    'X-GEMINI-SIGNATURE': signature.hexdigest(),
-                })
-            else:
-                request_args.update(params=params)
+        params = dict(params or {})
+
+        if method in ('post',):
+            params.update(
+                request=f'/{self._api_version}/{end_point}',
+                nonce=self._nonce
+            )
+            json_params = json.dumps(params or {}).encode()
+            payload = base64.b64encode(json_params)
+            signature = hmac.new(self._secret, payload, hashlib.sha384)
+            request_args.update(headers={
+                'X-GEMINI-PAYLOAD': payload,
+                'X-GEMINI-SIGNATURE': signature.hexdigest(),
+                **request_args['headers']
+            })
+        else:
+            request_args.update(params=params)
 
         if self._proxy:
             request_args.update(proxies=self._proxy)
 
         response = requests.request(**request_args)
 
-        if response:
+        if response is not None:
             if response.ok:
                 return response.json()
             else:
-                # elif any('json' in h for h in response.headers):
-                try:
-                    data = response.json()
-                    return {'error': data}
-                except json.JSONDecodeError:
-                    return {
-                        'error': {
-                            'code': response.status_code,
-                            'reason': response.reason,
-                            'content': response.text
-                        }
+                return self._error_handler(response, end_point, method, params)
+
+    def _error_handler(self, response, end_point, method=None, params=None):
+        try:
+            data = response.json()
+            if data:
+                if 'reason' in data:
+                    if 'InvalidNonce' in data['reason']:
+                        time.sleep(1.5)
+                        if self._nonce_mult >= 1000.0 ** 2:
+                            self._nonce_mult *= 10.0
+                        else:
+                            self._nonce_mult **= 2
+                        return self._request(end_point, method, params)
+                return {'error': data}
+            else:
+                return {
+                    'error': {
+                        'code': response.status_code,
+                        'reason': response.reason,
+                        'content': response.text
                     }
-                except (requests.RequestException, requests.ConnectionError):
-                    response.raise_for_status()
+                }
+        except json.JSONDecodeError:
+            return {
+                'error': {
+                    'code': response.status_code,
+                    'reason': response.reason,
+                    'content': response.text
+                }
+            }
+        except (requests.RequestException, requests.ConnectionError):
+            response.raise_for_status()
+        return {'error': 'Unknown error.'}
 
     @property
     def _nonce(self):
@@ -103,8 +127,6 @@ class Client:
         :return: current millisecond timestamp as the nonce
         """
         return f'{time.time() * self._nonce_mult:.0f}'
-
-
 
 
 class GeminiPublic(Client):
@@ -252,6 +274,17 @@ class Geminipy(GeminiPublic):
         """
         return self._request('balances', 'post')
 
+    def get_approved_addresses(self, network, label=None):
+        """Get an approved addresses request for supplied network.
+
+        :param str network: accepted vales -> bitcoin, ethereum, bitcoincash, litecoin, zcash, filecoin, dogecoin, tezos
+        :param str label: account name (example: primary)
+        :return:
+        """
+        assert str(network).lower() in NETWORKS, f'Invalid network {network}'
+        params = _get_params(locals(), 'network')
+        return self._request(f'approvedAddresses/account/{network}', 'post', params)
+
     def new_deposit_address(self, currency, label=None):
         """Send a request to generate a new cryptocurrency deposit address.
 
@@ -280,6 +313,7 @@ class Geminipy(GeminiPublic):
         :param str account: account name (example: primary)
         :return:
         """
+        assert str(network).lower() in NETWORKS, f'Invalid network {network}'
         params = _get_params(locals(), 'network')
         return self._request(f'approvedAddresses/account/{network}/remove', 'post', params)
 
@@ -292,6 +326,7 @@ class Geminipy(GeminiPublic):
         :param str account: account name (example: primary)
         :return:
         """
+        assert str(network).lower() in NETWORKS, f'Invalid network {network}'
         params = _get_params(locals(), 'network')
         return self._request(f'approvedAddresses/{network}/request', 'post', params)
 

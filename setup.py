@@ -1,5 +1,5 @@
 # -*- coding:utf-8 -*-
-from setuptools import setup, find_packages
+from setuptools import setup
 from pathlib import Path
 
 readme = Path('README.md')
@@ -11,7 +11,7 @@ else:
 setup(
     name='geminipy',
     version='0.0.6',
-    packages=find_packages('geminipy'),
+    packages=['geminipy'],
     url='https://github.com/pl0mo/geminipy',
     license='GNU GPL',
     author='Mike Marzigliano',
