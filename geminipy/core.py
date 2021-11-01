@@ -7,7 +7,7 @@ import time
 
 import requests
 
-from geminipy import _get_params
+from geminipy.utils import _get_params
 
 
 class Client:
