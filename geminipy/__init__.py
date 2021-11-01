@@ -1,3 +1,4 @@
+# -*- coding:utf-8 -*-
 """
 This module contains a class to make requests to the Gemini API.
 
@@ -11,7 +12,7 @@ import hashlib
 import requests
 
 
-class Geminipy(object):
+class Geminipy:
     """
     A class to make requests to the Gemini API.
 
