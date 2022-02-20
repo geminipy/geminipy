@@ -84,13 +84,3 @@ SYMBOLS = [
     'zrxusd'
 ]
 
-NETWORKS = [
-    'bitcoin',
-    'ethereum',
-    'bitcoincash',
-    'litecoin',
-    'zcash',
-    'filecoin',
-    'dogecoin',
-    'tezos'
-]
