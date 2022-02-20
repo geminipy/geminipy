@@ -62,6 +62,18 @@ target/
 #Ipython Notebook
 .ipynb_checkpoints
 
+.vscode
 
+venv/**
+
+geminipy.egg-info
+geminipy/lab
+geminipy/lab/**
+geminipy/lab/__init__.py
+geminipy/lab/check_accounts.py
+geminipy/lab/clearing_lab.py
+geminipy/lab/search_repos.py
 # Pycharm
 .idea
+data
+data/accounts_info.json
