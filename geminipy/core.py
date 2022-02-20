@@ -5,6 +5,7 @@ import hashlib
 import hmac
 import json
 import time
+
 import warnings
 from datetime import datetime as dt
 
@@ -15,14 +16,12 @@ from geminipy.utils import _get_params
 
 warnings.simplefilter('ignore')
 
-
 class Client:
     """Gemini API wrapper.
 
     Make public or authenticated requests according to the API documentation:
     https://docs.gemini.com/
     """
-
     def __init__(
             self,
             apikey=None,
@@ -32,6 +31,7 @@ class Client:
             api_version=1,
             timeout=15,
             proxy=None):
+
         """Initialize the class.
 
         :param str apikey: your Gemini API key.
@@ -43,6 +43,7 @@ class Client:
             self._url = f'https://api.gemini.com'
         else:
             self._url = f'https://api.sandbox.gemini.com'
+
         self._api_version = f'v{api_version:d}'
         self._proxy = {'http': proxy} if proxy else None
         self._timeout = timeout
@@ -57,6 +58,7 @@ class Client:
             'Cache-Control': 'no-cache'
         }
 
+
     # ================ Class private methods ================
 
     def _request(self, end_point, method=None, params=None):
@@ -68,6 +70,7 @@ class Client:
             'timeout': self._timeout,
             'headers': self._headers
         }
+
 
         params = dict(params or {})
 
@@ -91,8 +94,6 @@ class Client:
 
         if self._proxy:
             request_args.update(proxies=self._proxy)
-
-        response = requests.request(**request_args)
 
         if response.ok:
             return response.json()
@@ -209,6 +210,7 @@ class Geminipy(GeminiPublic):
 
     # ================ AUTHENTICATED ENDPOINTS ================
 
+
     def place_order(self, side, symbol, amount, price=None, client_order_id=None, type=None, options=None, account=None):
         """Send a request to place an order.
 
@@ -278,7 +280,7 @@ class Geminipy(GeminiPublic):
 
     def get_payment_methods(self, account=None):
         return self._request('payments/methods', 'post', params={'account': account or 'primary'})
-
+    
     def get_trade_volume(self):
         """Send a request to get your trade volume."""
         return self._request('tradevolume', 'post')
@@ -374,6 +376,7 @@ class Geminipy(GeminiPublic):
 
         :return:
         """
+
         return self._request('account', 'post', params={'account': account or 'primary'})
 
     def get_account_list(self):
@@ -390,6 +393,7 @@ class Geminipy(GeminiPublic):
         :return:
         """
         return self._request('heartbeat', 'post')
+
 
     # ID '6211ee5a-0c87-4deb-a216-3380c7beb14e'
     def get_transfers(self, currency=None, limit_transfers=50, show_completed_deposit_advances=False, account=None):
@@ -485,4 +489,3 @@ class Geminipy(GeminiPublic):
             params.update(account=account)
         result = self._request('clearing/cancel', 'post', params)
         return result
-
