@@ -1,14 +1,19 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import base64
 import hashlib
 import hmac
 import json
 import time
+import warnings
+from datetime import datetime as dt
 
 import requests
 
+from geminipy.model import Networks
 from geminipy.utils import _get_params
-from geminipy.constants import NETWORKS
+
+warnings.simplefilter('ignore')
 
 
 class Client:
@@ -18,14 +23,15 @@ class Client:
     https://docs.gemini.com/
     """
 
-    def __init__(self,
-                 apikey=None,
-                 secret=None,
-                 live=True,
-                 nonce_mult=1000.0,
-                 api_version=1,
-                 timeout=15,
-                 proxy=None):
+    def __init__(
+            self,
+            apikey=None,
+            secret=None,
+            live=True,
+            nonce_mult=1000.0,
+            api_version=1,
+            timeout=15,
+            proxy=None):
         """Initialize the class.
 
         :param str apikey: your Gemini API key.
@@ -44,7 +50,12 @@ class Client:
         self._apikey = apikey
         self._nonce_mult = nonce_mult
         self._secret = secret.encode()
-        self._headers = {'X-GEMINI-APIKEY': self._apikey}
+        self._headers = {
+            'Content-Type': 'text/plain',
+            'Content-Length': '0',
+            'X-GEMINI-APIKEY': self._apikey,
+            'Cache-Control': 'no-cache'
+        }
 
     # ================ Class private methods ================
 
@@ -65,14 +76,16 @@ class Client:
                 request=f'/{self._api_version}/{end_point}',
                 nonce=self._nonce
             )
-            json_params = json.dumps(params or {}).encode()
+            json_params = json.dumps(params).encode()
             payload = base64.b64encode(json_params)
             signature = hmac.new(self._secret, payload, hashlib.sha384)
-            request_args.update(headers={
-                'X-GEMINI-PAYLOAD': payload,
-                'X-GEMINI-SIGNATURE': signature.hexdigest(),
-                **request_args['headers']
-            })
+            request_args.update(
+                headers={
+                    'X-GEMINI-PAYLOAD': payload,
+                    'X-GEMINI-SIGNATURE': signature.hexdigest(),
+                    **request_args['headers']
+                }
+            )
         else:
             request_args.update(params=params)
 
@@ -81,11 +94,10 @@ class Client:
 
         response = requests.request(**request_args)
 
-        if response is not None:
-            if response.ok:
-                return response.json()
-            else:
-                return self._error_handler(response, end_point, method, params)
+        if response.ok:
+            return response.json()
+        else:
+            return self._error_handler(response, end_point, method, params)
 
     def _error_handler(self, response, end_point, method=None, params=None):
         try:
@@ -185,7 +197,7 @@ class GeminiPublic(Client):
         :return:
         """
         params = _get_params(locals(), 'symbol')
-        return self._request(f'auction/{symbol}/history', params)
+        return self._request(f'auction/{symbol}/history', params=params)
 
 
 class Geminipy(GeminiPublic):
@@ -197,7 +209,7 @@ class Geminipy(GeminiPublic):
 
     # ================ AUTHENTICATED ENDPOINTS ================
 
-    def place_order(self, side, symbol, amount, price=None, client_order_id=None, type=None, options=None):
+    def place_order(self, side, symbol, amount, price=None, client_order_id=None, type=None, options=None, account=None):
         """Send a request to place an order.
 
         :param str side: 'buy' or 'sell'
@@ -209,8 +221,9 @@ class Geminipy(GeminiPublic):
         :param options:
         return:
         """
+        account = account or 'primary'
         params = _get_params(locals(), 'amount', 'price')
-        params.update(amount=f'{amount}')
+        params.update(amount=f'{amount}', price=f'{price}')
         return self._request('order/new', 'post', params)
 
     def cancel_order(self, order_id):
@@ -263,29 +276,44 @@ class Geminipy(GeminiPublic):
         params = _get_params(locals())
         return self._request('mytrades', 'post', params)
 
+    def get_payment_methods(self, account=None):
+        return self._request('payments/methods', 'post', params={'account': account or 'primary'})
+
     def get_trade_volume(self):
         """Send a request to get your trade volume."""
         return self._request('tradevolume', 'post')
 
-    def get_balances(self):
+    def get_balances(self, account=None, precision=8):
         """Send an account balance request.
 
+        :param account:
+        :param precision:
         :return:
         """
-        return self._request('balances', 'post')
+        result = self._request('balances', 'post', params={'account': account or 'primary'})
+        if result and isinstance(result, list):
+            return {v.pop('currency'): dict(type=v['type'], amount=round(float(v['amount']), precision), available=round(float(v['available']), precision), withdrawable=round(float(v['availableForWithdrawal']), precision)) for v in result if v and 'amount' in v and round(float(v['amount']), precision) > 0.0}
+        elif result and isinstance(result, dict) and 'error' in result:
+            return result
+        else:
+            return {'error': f'Unknown error: {str(result)}'}
 
-    def get_approved_addresses(self, network, label=None):
+    def get_approved_addresses(self, network, label=None, account=None):
         """Get an approved addresses request for supplied network.
 
         :param str network: accepted vales -> bitcoin, ethereum, bitcoincash, litecoin, zcash, filecoin, dogecoin, tezos
         :param str label: account name (example: primary)
         :return:
         """
-        assert str(network).lower() in NETWORKS, f'Invalid network {network}'
+        account = account or 'primary'
         params = _get_params(locals(), 'network')
-        return self._request(f'approvedAddresses/account/{network}', 'post', params)
+        return self._request(f'approvedAddresses/account/{Networks.get_network(network)}', 'post', params)
 
-    def new_deposit_address(self, currency, label=None):
+    def get_deposit_addresses(self, network, account=None):
+        params = _get_params(locals(), 'network')
+        return self._request(f'addresses/{Networks.get_network(network)}', 'post', params)
+
+    def new_deposit_address(self, currency, label=None, account=None):
         """Send a request to generate a new cryptocurrency deposit address.
 
         :param str currency: crypto currency ID (example: btc)
@@ -313,9 +341,8 @@ class Geminipy(GeminiPublic):
         :param str account: account name (example: primary)
         :return:
         """
-        assert str(network).lower() in NETWORKS, f'Invalid network {network}'
         params = _get_params(locals(), 'network')
-        return self._request(f'approvedAddresses/account/{network}/remove', 'post', params)
+        return self._request(f'approvedAddresses/account/{Networks.get_network(network)}/remove', 'post', params)
 
     def request_approved_address(self, network, address, label=None, account=None):
         """Get approved addresses for supplied network and account (if supplied)
@@ -326,7 +353,6 @@ class Geminipy(GeminiPublic):
         :param str account: account name (example: primary)
         :return:
         """
-        assert str(network).lower() in NETWORKS, f'Invalid network {network}'
         params = _get_params(locals(), 'network')
         return self._request(f'approvedAddresses/{network}/request', 'post', params)
 
@@ -343,16 +369,120 @@ class Geminipy(GeminiPublic):
         params = _get_params(locals())
         return self._request('balances/earn', 'post', params)
 
-    def get_account_details(self):
+    def get_account_details(self, account=None):
         """Send a request to get account details related to supplied API keys.
 
         :return:
         """
-        return self._request('account', 'post')
+        return self._request('account', 'post', params={'account': account or 'primary'})
 
-    def get_heartbeat(self):
+    def get_account_list(self):
+        """
+
+        :param account;
+        """
+        return self._request('account/list', 'post')
+
+    @property
+    def heartbeat(self):
         """Send a heartbeat message.
 
         :return:
         """
         return self._request('heartbeat', 'post')
+
+    # ID '6211ee5a-0c87-4deb-a216-3380c7beb14e'
+    def get_transfers(self, currency=None, limit_transfers=50, show_completed_deposit_advances=False, account=None):
+        """Returns all the past transfers associated with the API.
+
+        """
+        params = _get_params(locals())
+        return self._request('transfers', 'post', params)
+
+    def internal_transfers(self, currency, sourceAccount, targetAccount, amount, clientTransferId=None):
+        params = _get_params(locals(), 'currency')
+        return self._request(f'account/transfer/{currency}', 'post', params)
+
+    def get_role(self):
+        """
+
+        :return:
+        """
+        return self._request('roles', 'post')
+
+    def withdraw(self, currency, address, amount, account=None):
+        params = {'address': address, 'amount': f'{amount}'}
+        if account:
+            params.update(account=account)
+        return self._request(f'withdraw/{str(currency).lower()}', 'post', params)
+
+    def clearing_new(self, counterparty_id, expires_in_hrs, symbol, amount, price, side, account=None):
+        """
+
+        :param counterparty_id:
+        :param int expires_in_hrs:
+        :param str symbol:
+        :param float amount:
+        :param flpat price:
+        :param str side:
+        :param str account:
+        :return :
+        """
+        params = {
+            'counterparty_id': counterparty_id,
+            'expires_in_hrs': expires_in_hrs,
+            'symbol': symbol,
+            'amount': amount,
+            'price': price,
+            'side': side
+        }
+        if account:
+            params.update(account=account)
+        result = self._request('clearing/new', 'post', params)
+        return result
+
+    def clearing_broker_new(self, source_counterparty_id, target_counterparty_id, expires_in_hrs: int, symbol, amount, price, side, account=None):
+        params = {
+            'source_counterparty_id': source_counterparty_id,
+            'target_counterparty_id': target_counterparty_id,
+            'expires_in_hrs': expires_in_hrs,
+            'symbol': symbol,
+            'amount': amount,
+            'price': price,
+            'side': side
+        }
+        if account:
+            params.update(account=account)
+        result = self._request('clearing/broker/new', 'post', params)
+        return result
+
+    def clearing_confirm(self, clearing_id, symbol, amount, price, side, account=None):
+        params = {
+            'clearing_id': clearing_id,
+            'symbol': symbol,
+            'amount': amount,
+            'price': price,
+            'side': side,
+            'account': account or 'primary'
+        }
+        result = self._request('clearing/confirm', 'post', params)
+        return result
+
+    def clearing_order_status(self, clearing_id, account=None):
+        params = {
+            'clearing_id': clearing_id,
+        }
+        if account:
+            params.update(account=account)
+        result = self._request('clearing/status', 'post', params)
+        return result
+
+    def clearing_cancel_order(self, clearing_id, account=None):
+        params = {
+            'clearing_id': clearing_id,
+        }
+        if account:
+            params.update(account=account)
+        result = self._request('clearing/cancel', 'post', params)
+        return result
+
