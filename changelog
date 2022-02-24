@@ -1,5 +1,24 @@
 # Geminipy Changelog
 
+# v0.0.6
+Code organization by creating "utils.py" and "core.py" files.
+Some errors fixed on README examples.
+Using findpackages in "setup.py" file.
+
+# v0.0.5
+Code update to python 3.6 or newer version.
+Code simplified and refactored
+Created new method "_requests" to unify all requests.
+Code comments changed.
+Method names changed for more friendly and autodoc ones.
+New class Geminipy method "get_account_details"
+New class Geminipy  method "get_earn_balance"
+New class Geminipy  method "request_approved_address"
+New class Geminipy  method "remove_approved_address"
+New class Geminipy  method "get_notional_balances"
+Changelog updated
+
+
 # v0.0.4
 Added "fees" function for the fee and notional volume API endpoint
 

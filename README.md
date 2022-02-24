@@ -1,5 +1,5 @@
 # Geminipy
-A library for the Gemini bitcoin exchange API
+A library for the Gemini bitcoin exchange API.
 
 Easily communicate with the Gemini Bitcoin exchange API without
 having to deal with HTTP requests.
@@ -7,14 +7,15 @@ having to deal with HTTP requests.
 
 Requirements
 ============
-Please get an API key from [https://exchange.gemini.com/settings/api](https://exchange.gemini.com/settings/api)
+A Python 3 interpreter (versions < 3.8 not tested)
+Please get your API keys from [https://exchange.gemini.com/settings/api](https://exchange.gemini.com/settings/api)
 
 
 Installation
 ============
 
 ```shell
-pip install geminipy
+pip install "git+https://github.com/pl0mo/geminipy"
 ```
 
 Example
@@ -23,27 +24,21 @@ Example
 ```python
 from geminipy import Geminipy
 
-# The connection defaults to the Gemini sandbox.
-# Add 'live=True' to use the live exchange
-con = Geminipy(api_key='your API key', secret_key='your secret key', live=True)
+# Set live param to False to use Gemini testing (sandbox) enviroment.
+api = Geminipy(apikey='your API key', secret='your secret key')
     
 # public request
-symbols = con.symbols()
-    
-# a Requests response is returned.
-# So we can access the HTTP reponse code,
-# the raw response content, or a json object
-print symbols.status_code
-print symbols.content
-print symbols.json()
+symbols = api.get_symbols()
+
+print(symbols)
     
 # authenticated request
-order = con.new_order(amount='1', price='200',side='buy')
+order = api.place_order('btcusd', amount=1, price=200.0, side='buy',)
     
-print order.json()
+print(order)
     
 #send a heartbeat
-con.heartbeat()
+api.get_heartbeat()
 ```
 
 The required nonce is the current millisecond timestamp.

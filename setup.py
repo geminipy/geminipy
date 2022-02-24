@@ -1,17 +1,22 @@
+# -*- coding:utf-8 -*-
 from setuptools import setup
+from pathlib import Path
 
-with open('README.md') as f:
-  readme = f.read().replace('```', '')
+readme = Path('README.md')
+if readme.is_file():
+    readme = readme.read_text().replace('```', '')
+else:
+    readme = ''
 
 setup(
     name='geminipy',
-    version='0.0.4',
+    version='0.0.6',
     packages=['geminipy'],
-    url='https://github.com/geminipy/geminipy',
+    url='https://github.com/pl0mo/geminipy',
     license='GNU GPL',
     author='Mike Marzigliano',
     author_email='marzig76@gmail.com',
     zip_safe=False,
     long_description=readme,
-    description='API client for Gemini',
+    description='API client for Gemini'
 )
